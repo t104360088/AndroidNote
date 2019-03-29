@@ -16,7 +16,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         calendarPicker.showDateTitle(true)
-        calendarPicker.setDisableWeek(4)
+        calendarPicker.setDisableWeek(arrayOf(1, 2))
         calendarPicker.setShortWeekDays(true)
         calendarPicker.minDate = Date()
         calendarPicker.date = Date()

@@ -37,55 +37,36 @@ class CustomCalendarView : LinearLayout {
     // Event
     private var listener: CustomCalendarListener? = null
     private val onClickListener = OnClickListener { view ->
-        // Extract day selected
-        val dayOfTheMonthContainer = view as ViewGroup
-        var tagId = dayOfTheMonthContainer.tag as String
-        tagId = tagId.substring(DAY_OF_THE_MONTH_LAYOUT.length, tagId.length)
-        val dayOfTheMonthText = view.findViewWithTag<TextView>(DAY_OF_THE_MONTH_TEXT + tagId)
-
-
-        // Extract the day from the text
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.YEAR, currentCalendar.get(Calendar.YEAR))
-        calendar.set(Calendar.MONTH, currentCalendar.get(Calendar.MONTH))
-        calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(dayOfTheMonthText.text.toString()))
+        val calendar = getDaysInCalendar(view)
+        val week = calendar.get(Calendar.DAY_OF_WEEK)
+        val isGreaterThanMinDate = calendar.compareTo(minCalendar) >= 1
 
         // Mark day
-        val isGreaterThanMinDate = calendar.compareTo(minCalendar) >= 1
-        if (disableWeek != calendar.get(Calendar.DAY_OF_WEEK) && isGreaterThanMinDate)
+        if (!disableWeek.contains(week) && isGreaterThanMinDate)
             markDayAsSelectedDay(calendar.time)
 
         // Fire event
         if (listener == null)
             throw IllegalStateException("You must assign a valid CustomCalendarListener first!")
         else {
-            if (disableWeek != calendar.get(Calendar.DAY_OF_WEEK) && isGreaterThanMinDate)
+            if (!disableWeek.contains(week) && isGreaterThanMinDate)
                 listener?.onDayClick(calendar.time)
         }
     }
     private val onLongClickListener = OnLongClickListener { view ->
-        // Extract day selected
-        val dayOfTheMonthContainer = view as ViewGroup
-        var tagId = dayOfTheMonthContainer.tag as String
-        tagId = tagId.substring(DAY_OF_THE_MONTH_LAYOUT.length, tagId.length)
-        val dayOfTheMonthText = view.findViewWithTag<TextView>(DAY_OF_THE_MONTH_TEXT + tagId)
-
-        // Extract the day from the text
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.YEAR, currentCalendar.get(Calendar.YEAR))
-        calendar.set(Calendar.MONTH, currentCalendar.get(Calendar.MONTH))
-        calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(dayOfTheMonthText.text.toString()))
+        val calendar = getDaysInCalendar(view)
+        val week = calendar.get(Calendar.DAY_OF_WEEK)
+        val isGreaterThanMinDate = calendar.compareTo(minCalendar) >= 1
 
         // Mark day
-        val isGreaterThanMinDate = calendar.compareTo(minCalendar) >= 1
-        if (disableWeek != calendar.get(Calendar.DAY_OF_WEEK) && isGreaterThanMinDate)
+        if (!disableWeek.contains(week) && isGreaterThanMinDate)
             markDayAsSelectedDay(calendar.time)
 
         // Fire event
         if (listener == null)
-            throw IllegalStateException("You must assign a valid RobotoCalendarListener first!")
+            throw IllegalStateException("You must assign a valid CustomCalendarListener first!")
         else {
-            if (disableWeek != calendar.get(Calendar.DAY_OF_WEEK) && isGreaterThanMinDate)
+            if (!disableWeek.contains(week) && isGreaterThanMinDate)
                 listener?.onDayClick(calendar.time)
         }
         true
@@ -93,7 +74,7 @@ class CustomCalendarView : LinearLayout {
 
     // Other
     private var shortWeekDays = false
-    private var disableWeek: Int = 0
+    private var disableWeek = arrayListOf<Int>()
 
     // The date of minimum
     var minDate: Date?
@@ -168,8 +149,11 @@ class CustomCalendarView : LinearLayout {
         setUpWeekDaysLayout()
     }
 
-    fun setDisableWeek(week: Int) {
-        disableWeek = if (week in 1..7) week else 0
+    fun setDisableWeek(week: Array<Int>) {
+        disableWeek.clear()
+        disableWeek.addAll(week)
+        clearSelectedDay()
+        setUpDaysInCalendar()
     }
 
     fun setCustomCalendarListener(listener: CustomCalendarListener) {
@@ -371,9 +355,24 @@ class CustomCalendarView : LinearLayout {
                 if (dayOfTheMonthText == null) break
 
                 dayOfTheMonthContainer.setOnClickListener(onClickListener)
-                dayOfTheMonthContainer.setOnLongClickListener(onLongClickListener)
                 dayOfTheMonthText?.visibility = View.VISIBLE
                 dayOfTheMonthText?.text = i.toString()
+
+                val calendar = Calendar.getInstance()
+                calendar.set(Calendar.YEAR, currentCalendar.get(Calendar.YEAR))
+                calendar.set(Calendar.MONTH, currentCalendar.get(Calendar.MONTH))
+                calendar.set(Calendar.DAY_OF_MONTH, i)
+
+                val week = calendar.get(Calendar.DAY_OF_WEEK)
+                val color =
+                    if (calendar < minCalendar || disableWeek.contains(week))
+                        android.R.color.darker_gray
+                    else
+                        R.color.calendar_day_of_the_month_font
+
+                dayOfTheMonthContainer.setOnClickListener(onClickListener)
+                dayOfTheMonthContainer.setOnLongClickListener(onLongClickListener)
+                dayOfTheMonthText?.setTextColor(ContextCompat.getColor(context, color))
                 i++
                 dayOfTheMonthIndex++
             }
@@ -389,6 +388,23 @@ class CustomCalendarView : LinearLayout {
                 else
                     View.VISIBLE
         }
+    }
+
+    // Get calendar from number in view
+    private fun getDaysInCalendar(view: View): Calendar {
+        // Extract day selected
+        val dayOfTheMonthContainer = view as ViewGroup
+        var tagId = dayOfTheMonthContainer.tag as String
+        tagId = tagId.substring(DAY_OF_THE_MONTH_LAYOUT.length, tagId.length)
+        val dayOfTheMonthText = view.findViewWithTag<TextView>(DAY_OF_THE_MONTH_TEXT + tagId)
+
+        // Extract the day from the text
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.YEAR, currentCalendar.get(Calendar.YEAR))
+        calendar.set(Calendar.MONTH, currentCalendar.get(Calendar.MONTH))
+        calendar.set(Calendar.DAY_OF_MONTH, Integer.valueOf(dayOfTheMonthText.text.toString()))
+
+        return calendar
     }
 
     private fun markDayAsCurrentDay() {
